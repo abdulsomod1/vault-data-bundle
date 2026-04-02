@@ -1,6 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Netlify deployment optimization
+  output: 'standalone',
+  // Image optimization
   images: {
     remotePatterns: [
       {
@@ -8,7 +11,9 @@ const nextConfig = {
         hostname: '**.supabaseusercontent.com',
       },
     ],
+    unoptimized: process.env.NETLIFY === 'true', // Disable optimization on Netlify
   },
+  // Security headers
   headers: async () => {
     return [
       {
@@ -20,15 +25,30 @@ const nextConfig = {
           },
           {
             key: 'X-Frame-Options',
-            value: 'DENY',
+            value: 'SAMEORIGIN',
           },
           {
             key: 'X-XSS-Protection',
             value: '1; mode=block',
           },
+          {
+            key: 'Referrer-Policy',
+            value: 'no-referrer-when-downgrade',
+          },
         ],
       },
     ];
+  },
+  // API redirects
+  rewrites: async () => {
+    return {
+      beforeFiles: [
+        {
+          source: '/api/:path*',
+          destination: '/api/:path*',
+        },
+      ],
+    };
   },
 };
 
