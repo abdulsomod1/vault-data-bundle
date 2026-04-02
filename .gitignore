@@ -1,0 +1,36 @@
+# Environment variables
+.env.local
+.env.*.local
+.env
+
+# Node modules
+node_modules/
+.npm
+
+# Build outputs
+.next/
+out/
+dist/
+build/
+
+# OS files
+.DS_Store
+Thumbs.db
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Vercel
+.vercel/
+
+# Testing
+coverage/
+.nyc_output/
+
+# Dependencies
+yarn.lock
+package-lock.json
