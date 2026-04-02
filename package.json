@@ -4,7 +4,8 @@
   "description": "Professional VTU & Data Website",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build && next export",
+    "build:local": "next build",
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit"

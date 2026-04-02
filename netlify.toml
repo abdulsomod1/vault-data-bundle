@@ -6,15 +6,13 @@
 [build]
   # Build command for Next.js
   command = "npm run build"
-  # Functions directory (for Netlify Functions)
+  # Publish directory - Next.js exports to out
+  publish = "out"
+  # Functions directory
   functions = "netlify/functions"
-  # Publish directory - Next.js exports to .next
-  publish = ".next"
 
 [build.environment]
-  # Node version for build
   NODE_VERSION = "18"
-  # Enable Next.js optimizations
   NODE_ENV = "production"
 
 # =============================================

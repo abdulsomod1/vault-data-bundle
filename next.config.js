@@ -1,8 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Netlify deployment optimization
-  output: 'standalone',
   // Image optimization
   images: {
     remotePatterns: [
@@ -11,7 +9,7 @@ const nextConfig = {
         hostname: '**.supabaseusercontent.com',
       },
     ],
-    unoptimized: process.env.NETLIFY === 'true', // Disable optimization on Netlify
+    unoptimized: true, // Disable optimization for Netlify
   },
   // Security headers
   headers: async () => {
