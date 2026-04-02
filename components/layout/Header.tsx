@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { authService } from '@/lib/auth';
 import { User } from '@/types';
-import { Button } from './UI';
+import { Button } from '@/components/common/UI';
 
 export const Header: React.FC<{ user?: User | null }> = ({ user }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
