@@ -1,6 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase, supabaseAdmin } from '@/lib/supabase';
-import { generateOrderReference } from './payment';
+
+// Generate unique order reference
+function generateOrderReference(): string {
+  return `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+}
+
+// API Response helpers
+export function createApiResponse(data: any, status = 200) {
+  return NextResponse.json(data, { status });
+}
+
+export function createErrorResponse(message: string, status = 400) {
+  return NextResponse.json({ error: message }, { status });
+}
 
 // Middleware to verify auth
 export async function verifyAuth(request: NextRequest) {
