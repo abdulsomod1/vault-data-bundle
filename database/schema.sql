@@ -40,7 +40,7 @@ END $$;
 
 -- Create ENUM for data network
 DO $$ BEGIN
-  CREATE TYPE data_network AS ENUM ('mtn', 'airtel', 'glo', '9mobile');
+  CREATE TYPE data_network AS ENUM ('mtn', 'airtel', 'glo', 'nine_mobile');
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
@@ -193,15 +193,22 @@ ALTER TABLE sim_sources ENABLE ROW LEVEL SECURITY;
 -- Drop existing policies to avoid conflicts
 DO $$ 
 BEGIN
+  -- Drop all policies from all tables
   DROP POLICY IF EXISTS "Users can view own data" ON users;
   DROP POLICY IF EXISTS "Users can view own wallet" ON wallets;
+  DROP POLICY IF EXISTS "Users can update own wallet" ON wallets;
   DROP POLICY IF EXISTS "Users can view own orders" ON orders;
   DROP POLICY IF EXISTS "Users can create orders" ON orders;
+  DROP POLICY IF EXISTS "Admin can view all orders" ON orders;
+  DROP POLICY IF EXISTS "Admin can update orders" ON orders;
   DROP POLICY IF EXISTS "Users can view own transactions" ON transactions;
+  DROP POLICY IF EXISTS "Admin can view all transactions" ON transactions;
   DROP POLICY IF EXISTS "Users can view own notifications" ON notifications;
   DROP POLICY IF EXISTS "Admin can view all data" ON orders;
   DROP POLICY IF EXISTS "Public can view data plans" ON data_plans;
+  DROP POLICY IF EXISTS "Admin can manage data plans" ON data_plans;
   DROP POLICY IF EXISTS "Admin can manage SIM sources" ON sim_sources;
+  DROP POLICY IF EXISTS "Public can view data plans" ON data_plans;
 EXCEPTION WHEN others THEN NULL;
 END $$;
 
@@ -280,16 +287,16 @@ BEGIN
     ('airtel', 'data', 'Airtel 1GB', 200.00, '30 days', 'Airtel 1GB data', TRUE),
     ('glo', 'data', 'Glo 500MB', 100.00, '30 days', 'Glo 500MB data', TRUE),
     ('glo', 'data', 'Glo 1GB', 200.00, '30 days', 'Glo 1GB data', TRUE),
-    ('9mobile', 'data', '9mobile 500MB', 100.00, '30 days', '9mobile 500MB data', TRUE),
-    ('9mobile', 'data', '9mobile 1GB', 200.00, '30 days', '9mobile 1GB data', TRUE),
-    ('mtn', 'airtime', 'MTN Airtime ₦500', 500.00, 'No expiry', 'MTN Airtime ₦500', TRUE),
-    ('mtn', 'airtime', 'MTN Airtime ₦1000', 1000.00, 'No expiry', 'MTN Airtime ₦1000', TRUE),
-    ('airtel', 'airtime', 'Airtel Airtime ₦500', 500.00, 'No expiry', 'Airtel Airtime ₦500', TRUE),
-    ('airtel', 'airtime', 'Airtel Airtime ₦1000', 1000.00, 'No expiry', 'Airtel Airtime ₦1000', TRUE),
-    ('glo', 'airtime', 'Glo Airtime ₦500', 500.00, 'No expiry', 'Glo Airtime ₦500', TRUE),
-    ('glo', 'airtime', 'Glo Airtime ₦1000', 1000.00, 'No expiry', 'Glo Airtime ₦1000', TRUE),
-    ('9mobile', 'airtime', '9mobile Airtime ₦500', 500.00, 'No expiry', '9mobile Airtime ₦500', TRUE),
-    ('9mobile', 'airtime', '9mobile Airtime ₦1000', 1000.00, 'No expiry', '9mobile Airtime ₦1000', TRUE)
+    ('nine_mobile', 'data', '9mobile 500MB', 100.00, '30 days', '9mobile 500MB data', TRUE),
+    ('nine_mobile', 'data', '9mobile 1GB', 200.00, '30 days', '9mobile 1GB data', TRUE),
+    ('mtn', 'airtime', 'MTN Airtime 500', 500.00, 'No expiry', 'MTN Airtime 500', TRUE),
+    ('mtn', 'airtime', 'MTN Airtime 1000', 1000.00, 'No expiry', 'MTN Airtime 1000', TRUE),
+    ('airtel', 'airtime', 'Airtel Airtime 500', 500.00, 'No expiry', 'Airtel Airtime 500', TRUE),
+    ('airtel', 'airtime', 'Airtel Airtime 1000', 1000.00, 'No expiry', 'Airtel Airtime 1000', TRUE),
+    ('glo', 'airtime', 'Glo Airtime 500', 500.00, 'No expiry', 'Glo Airtime 500', TRUE),
+    ('glo', 'airtime', 'Glo Airtime 1000', 1000.00, 'No expiry', 'Glo Airtime 1000', TRUE),
+    ('nine_mobile', 'airtime', '9mobile Airtime 500', 500.00, 'No expiry', '9mobile Airtime 500', TRUE),
+    ('nine_mobile', 'airtime', '9mobile Airtime 1000', 1000.00, 'No expiry', '9mobile Airtime 1000', TRUE)
   ON CONFLICT DO NOTHING;
 EXCEPTION WHEN others THEN
   RAISE NOTICE 'Seed data insertion skipped or already exists';
