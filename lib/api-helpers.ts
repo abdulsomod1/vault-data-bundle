@@ -1,50 +1,60 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { supabase, supabaseAdmin } from '@/lib/supabase';
 
 // Generate unique order reference
-function generateOrderReference(): string {
+export function generateOrderReference(): string {
   return `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
 }
 
 // API Response helpers
 export function createApiResponse(data: any, status = 200) {
-  return NextResponse.json(data, { status });
+  return NextResponse.json(
+    { success: true, data },
+    { status }
+  );
 }
 
 export function createErrorResponse(message: string, status = 400) {
-  return NextResponse.json({ error: message }, { status });
+  return NextResponse.json(
+    { success: false, error: message, data: null },
+    { status }
+  );
 }
 
-// Middleware to verify auth
-export async function verifyAuth(request: NextRequest) {
+// Verify authentication token
+export async function verifyAuth(request: any) {
   try {
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
+    const authHeader = request.headers.get('authorization')?.replace('Bearer ', '');
+    
+    if (!authHeader) {
       return { error: 'Unauthorized', status: 401 };
     }
 
-    const token = authHeader.slice(7);
-    const { data, error } = await supabaseAdmin.auth.getUser(token);
+    const { data: { user }, error } = await supabaseAdmin.auth.getUser(authHeader);
 
-    if (error || !data.user) {
+    if (error || !user) {
       return { error: 'Invalid token', status: 401 };
     }
 
     // Get user profile
-    const { data: userProfile } = await supabaseAdmin
+    const { data: userProfile, error: profileError } = await supabaseAdmin
       .from('users')
       .select('*')
-      .eq('id', data.user.id)
+      .eq('id', user.id)
       .single();
 
-    return { user: data.user, profile: userProfile, error: null };
+    if (profileError) {
+      return { error: 'User profile not found', status: 404 };
+    }
+
+    return { user, profile: userProfile, error: null };
   } catch (error) {
     return { error: 'Auth verification failed', status: 500 };
   }
 }
 
 // Verify admin role
-export async function verifyAdmin(request: NextRequest) {
+export async function verifyAdmin(request: any) {
   const { user, profile, error, status } = await verifyAuth(request);
 
   if (error) {
@@ -52,7 +62,7 @@ export async function verifyAdmin(request: NextRequest) {
   }
 
   if (profile?.role !== 'admin') {
-    return { error: 'Forbidden', status: 403 };
+    return { error: 'Forbidden: Admin access required', status: 403 };
   }
 
   return { user, profile, error: null };
@@ -69,8 +79,8 @@ export async function getUserWallet(userId: string) {
 
     if (error) throw error;
     return data;
-  } catch (error) {
-    throw new Error(`Failed to get wallet: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to get wallet: ${error.message}`);
   }
 }
 
@@ -90,8 +100,8 @@ export async function getWalletTransactions(
 
     if (error) throw error;
     return { data, count };
-  } catch (error) {
-    throw new Error(`Failed to get transactions: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to get transactions: ${error.message}`);
   }
 }
 
@@ -123,8 +133,8 @@ export async function createTransaction(
 
     if (error) throw error;
     return data;
-  } catch (error) {
-    throw new Error(`Failed to create transaction: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to create transaction: ${error.message}`);
   }
 }
 
@@ -143,8 +153,8 @@ export async function updateTransactionStatus(
 
     if (error) throw error;
     return data;
-  } catch (error) {
-    throw new Error(`Failed to update transaction: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to update transaction: ${error.message}`);
   }
 }
 
@@ -180,8 +190,8 @@ export async function getDataPlans(network?: string) {
 
     if (error) throw error;
     return data;
-  } catch (error) {
-    throw new Error(`Failed to get data plans: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to get data plans: ${error.message}`);
   }
 }
 
@@ -190,8 +200,8 @@ export async function createOrder(
   userId: string,
   network: string,
   phoneNumber: string,
-  dataPlanId: string,
   amount: number,
+  packageType: string = 'data',
   metadata?: Record<string, any>
 ) {
   try {
@@ -201,10 +211,10 @@ export async function createOrder(
       .from('orders')
       .insert({
         user_id: userId,
-        data_plan_id: dataPlanId,
         network,
         phone_number: phoneNumber,
         amount,
+        package_type: packageType,
         status: 'pending',
         reference,
         metadata,
@@ -214,8 +224,8 @@ export async function createOrder(
 
     if (error) throw error;
     return data;
-  } catch (error) {
-    throw new Error(`Failed to create order: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to create order: ${error.message}`);
   }
 }
 
@@ -231,8 +241,8 @@ export async function getUserOrders(userId: string, limit = 50, offset = 0) {
 
     if (error) throw error;
     return { data, count };
-  } catch (error) {
-    throw new Error(`Failed to get orders: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to get orders: ${error.message}`);
   }
 }
 
@@ -247,8 +257,8 @@ export async function getOrderById(orderId: string) {
 
     if (error) throw error;
     return data;
-  } catch (error) {
-    throw new Error(`Failed to get order: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to get order: ${error.message}`);
   }
 }
 
@@ -270,8 +280,8 @@ export async function updateOrderStatus(
 
     if (error) throw error;
     return data;
-  } catch (error) {
-    throw new Error(`Failed to update order: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to update order: ${error.message}`);
   }
 }
 
@@ -280,8 +290,7 @@ export async function createNotification(
   userId: string,
   title: string,
   message: string,
-  type = 'info',
-  actionUrl?: string
+  type = 'info'
 ) {
   try {
     const { data, error } = await supabase
@@ -291,14 +300,13 @@ export async function createNotification(
         title,
         message,
         type,
-        action_url: actionUrl,
       })
       .select()
       .single();
 
     if (error) throw error;
     return data;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to create notification:', error);
     return null;
   }
@@ -311,13 +319,14 @@ export async function getUserNotifications(userId: string, limit = 50) {
       .from('notifications')
       .select('*')
       .eq('user_id', userId)
+      .eq('read', false)
       .order('created_at', { ascending: false })
       .limit(limit);
 
     if (error) throw error;
     return data;
-  } catch (error) {
-    throw new Error(`Failed to get notifications: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to get notifications: ${error.message}`);
   }
 }
 
@@ -326,13 +335,13 @@ export async function markNotificationAsRead(notificationId: string) {
   try {
     const { error } = await supabase
       .from('notifications')
-      .update({ is_read: true })
+      .update({ read: true })
       .eq('id', notificationId);
 
     if (error) throw error;
     return { success: true };
-  } catch (error) {
-    throw new Error(`Failed to mark notification as read: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to mark notification as read: ${error.message}`);
   }
 }
 
@@ -347,7 +356,9 @@ export async function getAllOrders(
   }
 ) {
   try {
-    let query = supabase.from('orders').select('*', { count: 'exact' });
+    let query = supabase
+      .from('orders')
+      .select('*', { count: 'exact' });
 
     if (filters?.network) {
       query = query.eq('network', filters.network);
@@ -367,15 +378,18 @@ export async function getAllOrders(
 
     if (error) throw error;
     return { data, count };
-  } catch (error) {
-    throw new Error(`Failed to get orders: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to get orders: ${error.message}`);
   }
 }
 
-// Get SIMs
-export async function getSims(network?: string) {
+// Get SIM sources
+export async function getSimSources(network?: string) {
   try {
-    let query = supabase.from('sims').select('*').eq('is_active', true);
+    let query = supabase
+      .from('sim_sources')
+      .select('*')
+      .eq('status', 'active');
 
     if (network) {
       query = query.eq('network', network);
@@ -385,63 +399,67 @@ export async function getSims(network?: string) {
 
     if (error) throw error;
     return data;
-  } catch (error) {
-    throw new Error(`Failed to get SIMs: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to get SIM sources: ${error.message}`);
   }
 }
 
-// Get dashboard stats (admin only)
-export async function getDashboardStats(date?: string) {
+// Update wallet balance
+export async function updateWalletBalance(
+  walletId: string,
+  amount: number,
+  isCredit: boolean
+) {
   try {
-    const queryDate = date || new Date().toISOString().split('T')[0];
-
     const { data, error } = await supabase
-      .from('daily_stats')
-      .select('*')
-      .eq('date', queryDate)
-      .single();
+      .rpc('update_wallet_balance', {
+        wallet_id: walletId,
+        amount: isCredit ? amount : -amount,
+      });
 
-    if (error && error.code !== 'PGRST116') throw error;
-
-    return data || {
-      total_revenue: 0,
-      total_orders: 0,
-      total_customers: 0,
-      completed_orders: 0,
-      pending_orders: 0,
-      failed_orders: 0,
-    };
-  } catch (error) {
-    throw new Error(`Failed to get dashboard stats: ${error}`);
+    if (error) throw error;
+    return data;
+  } catch (error: any) {
+    throw new Error(`Failed to update wallet balance: ${error.message}`);
   }
 }
+
+// Get admin dashboard stats
+export async function getAdminStats() {
+  try {
+    // Get today's orders
+    const today = new Date().toISOString().split('T')[0];
+    
+    const { data: orders, error: ordersError } = await supabase
+      .from('orders')
+      .select('*', { count: 'exact' })
+      .gte('created_at', `${today}T00:00:00`);
+
+    const { data: users, error: usersError } = await supabase
       .from('users')
-      .select('*')
-      .eq('id', data.user.id)
-      .single();
+      .select('*', { count: 'exact' })
+      .eq('role', 'user');
 
-    return { user: userProfile, token };
-  } catch (error) {
-    return { error: 'Unauthorized', status: 401 };
+    const { data: transactions, error: txnError } = await supabase
+      .from('transactions')
+      .select('amount')
+      .eq('status', 'completed')
+      .eq('type', 'credit')
+      .gte('created_at', `${today}T00:00:00`);
+
+    if (ordersError || usersError || txnError) {
+      throw new Error('Failed to fetch stats');
+    }
+
+    const totalRevenue = transactions?.reduce((sum: number, txn: any) => sum + txn.amount, 0) || 0;
+
+    return {
+      total_revenue: totalRevenue,
+      total_orders: orders?.length || 0,
+      total_users: users?.length || 0,
+      today_orders: orders?.filter((o: any) => o.status === 'completed').length || 0,
+    };
+  } catch (error: any) {
+    throw new Error(`Failed to get admin stats: ${error.message}`);
   }
-}
-
-// Protected route wrapper
-export function createApiResponse(data?: any, error?: string, status = 200) {
-  if (error) {
-    return NextResponse.json(
-      { success: false, error, data: null },
-      { status: status || 500 }
-    );
-  }
-
-  return NextResponse.json({ success: true, data }, { status });
-}
-
-// Error response
-export function createErrorResponse(message: string, status = 500) {
-  return NextResponse.json(
-    { success: false, error: message, data: null },
-    { status }
-  );
 }
